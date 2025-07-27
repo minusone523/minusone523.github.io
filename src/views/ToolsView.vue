@@ -34,6 +34,21 @@
         return moment(parseInt(this.time.timestamp / parseInt(this.time.unit) * 1000)).local().format("YYYY-MM-DD HH:mm:ss");
       }
     },
+    created() {
+    console.log('JSView created');
+  },
+  mounted() {
+    console.log('JSView mounted');
+  },
+  activated() {
+    console.log('JSView activated'); // keep-alive 激活时调用
+  },
+  deactivated() {
+    console.log('JSView deactivated'); // keep-alive 休眠时调用
+  },
+  beforeUnmount() {
+    console.log('JSView beforeUnmount');
+  }
   });
   </script>
   

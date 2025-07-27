@@ -38,10 +38,7 @@
                 <router-link class="nav-link" to="/excel">Excel</router-link>
               </li>
               <li class="nav-item">
-                <router-link class="nav-link" to="/js">JS</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link class="nav-link" to="/test">Test</router-link>
+                <router-link class="nav-link" to="/js">JS Calculator</router-link>
               </li>
             </ul>
           </div>
