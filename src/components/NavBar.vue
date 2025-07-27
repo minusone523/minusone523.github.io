@@ -40,6 +40,9 @@
               <li class="nav-item">
                 <router-link class="nav-link" to="/js">JS Calculator</router-link>
               </li>
+              <li class="nav-item">
+                <router-link class="nav-link" to="/json-diff">JSON Diff</router-link>
+              </li>
             </ul>
           </div>
         </div>

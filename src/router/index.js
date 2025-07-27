@@ -5,6 +5,7 @@ import DiffView   from '@/views/DiffView.vue'
 import ToolsView  from '@/views/ToolsView.vue'
 import JSView     from '@/views/JSView.vue'
 import JsonView   from '@/views/JsonView.vue'
+import JsonDiffView   from '@/views/JsonDiffView.vue'
 import ExcelView  from '@/views/ExcelView.vue'
 import TestView   from '@/views/TestView.vue'
 import store      from '@/store'
@@ -16,7 +17,8 @@ const routes = [
   { path: '/json',  name: 'Json',  component: JsonView },
   { path: '/excel', name: 'Excel',component: ExcelView },
   { path: '/js',    name: 'JS',    component: JSView },
-  { path: '/test',  name: 'Test',  component: TestView },
+  { path: '/json-diff', name: 'JsonDiff', component: JsonDiffView},
+  // { path: '/test',  name: 'Test',  component: TestView },
   // { path: '/home',  name: 'Home',  component: HomeView },
 ]
 
