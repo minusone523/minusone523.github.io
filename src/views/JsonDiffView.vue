@@ -145,6 +145,7 @@ export default defineComponent({
     // 组件挂载时自动比较
     if (this.autoDiff) {
       this.compareJson();
+      this.expandAll();
     }
     
     // 加载保存的版本列表
@@ -316,12 +317,12 @@ export default defineComponent({
     // 生成差异树
     generateDiffTree(obj1, obj2, path = '') {
       const result = {};
-      
+
       // 如果两个对象完全相等
       if (JSON.stringify(obj1) === JSON.stringify(obj2)) {
         return result;
       }
-      
+
       // 处理 null 或 undefined
       if (obj1 === null || obj1 === undefined) {
         if (obj2 !== null && obj2 !== undefined) {
@@ -335,7 +336,7 @@ export default defineComponent({
         }
         return result;
       }
-      
+
       if (obj2 === null || obj2 === undefined) {
         if (obj1 !== null && obj1 !== undefined) {
           const key = path || 'root';
@@ -348,7 +349,7 @@ export default defineComponent({
         }
         return result;
       }
-      
+
       // 处理基本类型
       if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
         if (obj1 !== obj2) {
@@ -362,7 +363,7 @@ export default defineComponent({
         }
         return result;
       }
-      
+
       // 处理数组
       if (Array.isArray(obj1) && Array.isArray(obj2)) {
         const key = path || 'root';
@@ -372,12 +373,12 @@ export default defineComponent({
           newValue: obj2,
           children: {}
         };
-        
+
         const maxLength = Math.max(obj1.length, obj2.length);
         for (let i = 0; i < maxLength; i++) {
           const arrayKey = `[${i}]`;
           const childPath = path ? `${path}${arrayKey}` : arrayKey;
-          
+
           if (i >= obj1.length) {
             node.children[arrayKey] = {
               type: 'added',
@@ -393,15 +394,27 @@ export default defineComponent({
               children: {}
             };
           } else {
-            const childDiff = this.generateDiffTree(obj1[i], obj2[i], childPath);
-            Object.assign(node.children, childDiff);
+            // --- 修改点 1: 处理数组元素的子差异 ---
+            const childDiffResult = this.generateDiffTree(obj1[i], obj2[i], childPath);
+            // childDiffResult 是 { someKey: diffNode } 的形式
+            // 我们需要将 diffNode 赋值给 node.children[arrayKey]
+            if (Object.keys(childDiffResult).length > 0) {
+                // 遍历递归结果，通常只有一个顶层键
+                for (const childResultKey in childDiffResult) {
+                    const childNode = childDiffResult[childResultKey];
+                    // 将子节点差异赋值给当前数组元素的位置
+                    node.children[arrayKey] = childNode;
+                    break; // 只处理第一个（通常也是唯一一个）找到的差异节点
+                }
+            }
+            // --- ---
           }
         }
-        
+
         result[key] = node;
         return result;
       }
-      
+
       // 处理对象
       if (!Array.isArray(obj1) && !Array.isArray(obj2)) {
         const key = path || 'root';
@@ -411,23 +424,33 @@ export default defineComponent({
           newValue: obj2,
           children: {}
         };
-        
+
         // 找出所有键
         const allKeys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
-        
         for (const objKey of allKeys) {
           const childPath = path ? `${path}.${objKey}` : objKey;
-          const childDiff = this.generateDiffTree(obj1[objKey], obj2[objKey], childPath);
-          Object.assign(node.children, childDiff);
+          // --- 修改点 2: 处理对象属性的子差异 ---
+          const childDiffResult = this.generateDiffTree(obj1[objKey], obj2[objKey], childPath);
+          // childDiffResult 是 { someKey: diffNode } 的形式
+          // 我们需要将 diffNode 赋值给 node.children[objKey]
+          if (Object.keys(childDiffResult).length > 0) {
+              for (const childResultKey in childDiffResult) {
+                  const childNode = childDiffResult[childResultKey];
+                  // 将子节点差异赋值给当前对象属性的键下
+                  node.children[objKey] = childNode;
+                  break;
+              }
+          }
+          // --- ---
         }
-        
+
         // 只有当有子差异才添加节点
         if (Object.keys(node.children).length > 0) {
           result[key] = node;
         }
         return result;
       }
-      
+
       // 类型不匹配
       const key = path || 'root';
       result[key] = {
@@ -436,7 +459,7 @@ export default defineComponent({
         newValue: obj2,
         children: {}
       };
-      
+
       return result;
     }
   },
@@ -460,7 +483,7 @@ export default defineComponent({
 
 <style scoped>
 .json-tree-diff-container {
-  padding: 10px 20px 20px 20px;
+  padding: 0px 10px 10px 10px;
   max-width: 1400px;
   margin: 0 auto;
 }
