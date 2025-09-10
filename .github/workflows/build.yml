@@ -1,6 +1,5 @@
 name: 🚀 Build & Deploy to GitHub Pages
 
-# 触发时机：每当你 push 到 main 分支时执行
 on:
   push:
     branches:
@@ -14,17 +13,71 @@ jobs:
     steps:
       # 1. 检出代码
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # 2. 安装 Node.js 环境
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # 2. 安装 Node.js 环境（并启用 npm cache）
+      - name: Setup Node.js (with npm cache)
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
-      # 3. 安装依赖
+      # 2.1 显示版本，便于排查
+      - name: Show node & npm versions
+        run: |
+          node -v
+          npm -v
+
+      # 2.2 可选：当你怀疑 npm v10 导致网络/并发问题时，可启用此步回退到 npm@9
+      # - name: Optional: pin npm to v9 (uncomment to enable)
+      #   run: npm install -g npm@9
+
+      # 3. 安装依赖（增加 npm 重试/超时设置 + 重试循环）
       - name: Install dependencies
-        run: npm ci
+        env:
+          # 增强 npm 的重试与超时设置（可按需调整）
+          NPM_CONFIG_FETCH_RETRIES: 5
+          NPM_CONFIG_FETCH_RETRY_FACTOR: 10
+          NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: 10000
+          NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: 60000
+          NPM_CONFIG_FETCH_TIMEOUT: 300000
+        run: |
+          set -euo pipefail
+          MAX_TRIES=3
+          try=0
+          until [ $try -ge $MAX_TRIES ]
+          do
+            try=$((try+1))
+            echo "npm ci try #$try"
+            # --prefer-offline 尝试使用本地缓存以减少网络请求
+            # --no-audit/--no-fund 可缩短安装时间
+            if npm ci --prefer-offline --no-audit --no-fund; then
+              echo "npm ci succeeded on attempt #$try"
+              break
+            fi
+            echo "npm ci failed (attempt $try)"
+            # 指数回退短暂停顿
+            sleep_seconds=$(( try * 5 ))
+            echo "sleeping ${sleep_seconds}s before next attempt..."
+            sleep ${sleep_seconds}
+          done
+
+          if [ $try -ge $MAX_TRIES ]; then
+            echo "npm ci failed after $MAX_TRIES attempts — dumping npm logs for diagnosis"
+            # 打印日志以便 Actions 日志里能看到（上传 artifact 的步骤也会收集这些文件）
+            ls -la /home/runner/.npm/_logs || true
+            cat /home/runner/.npm/_logs/*.log || true
+            exit 1
+          fi
+
+      # 3.1 如果步骤失败，这一步会触发并上传 npm 日志（便于离线分析）
+      - name: Upload npm logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-logs
+          path: /home/runner/.npm/_logs/**
 
       # 4. 运行构建
       - name: Build static files
@@ -34,10 +87,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          # 使用内置的 GITHUB_TOKEN，无需自己再创建
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # 发布目录，改成你项目的实际产物目录
           publish_dir: ./dist
-          # （可选）如果你想改分支名，比如用 docs 而不是 gh-pages：
-          # publish_branch: docs
-
+          # publish_branch: docs  # 如果想发布到 docs 分支，解除注释并改名
