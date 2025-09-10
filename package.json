@@ -26,7 +26,8 @@
         "vue-json-pretty": "^2.5.0",
         "vue-router": "^4.0.3",
         "vue3-excel-editor": "^1.0.20",
-        "vuex": "^4.1.0"
+        "vuex": "^4.1.0",
+        "chart.js": "^4.4.0"
     },
     "devDependencies": {
         "@babel/core": "^7.12.16",
