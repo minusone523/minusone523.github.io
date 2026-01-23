@@ -33,6 +33,7 @@
       <button class="btn btn-primary" @click="onAction(split)">Split</button>
       <button class="btn btn-primary" @click="onAction(sort)">Sort</button>
       <button class="btn btn-primary" @click="onAction(() => remove(' '))">Trim Space</button>
+      <button class="btn btn-primary" @click="onAction(lowercase)">Lowercase</button>
       <button class="btn btn-primary" @click="onAction(diffParams)">Diff Params</button>
       <button class="btn btn-primary" @click="onAction(unique)">Unique</button>
       <button class="btn btn-secondary" @click="undo" :disabled="!canUndo">Undo</button>
@@ -195,6 +196,10 @@ export default defineComponent({
       }
       this.diff.left = processParams(this.diff.left);
       this.diff.right = processParams(this.diff.right);
+    },
+    lowercase() {
+      this.diff.left = this.diff.left.toLowerCase();
+      this.diff.right = this.diff.right.toLowerCase();
     },
     unique() {
       const dedup = (text) => {
